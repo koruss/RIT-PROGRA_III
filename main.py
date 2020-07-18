@@ -2,14 +2,14 @@ import re
 import math
 
 def readText():
-    f = open ('C:/Users/admin/Desktop/reut2-001.sgm','r');
+    f = open ('reut2-001.sgm','r');
     mensaje="";
     for line in f.readlines():
         print(line);
     f.close();
 
 def readStopWords(dictStopWords):
-    f = open ('C:/Users/admin/Desktop/Rit3/RIT-PROGRA_III/stopwords.txt','r');
+    f = open ('stopwords.txt','r');
     message = f.read();
 
     patternStopWords = re.compile(r"([a-z']+)");
@@ -22,7 +22,18 @@ def removeComma(Number):
     new = re.sub('(?<=\d),(?=\d)', '', Number);
     return new;
 
-def entropiaClases():
+#def entropiaClases():
+
+
+
+def readFile():
+    f = open('reut2-001.sgm', 'r')
+    data= f.read()
+    soup = BeautifulSoup(data)
+    contents = soup.findAll('TITLE')
+    for content in contents:
+        print (content.text)
+
     
 
 
