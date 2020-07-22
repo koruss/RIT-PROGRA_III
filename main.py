@@ -1,5 +1,6 @@
 import re
 import math
+from os import remove
 
 def readText():
     f = open ('reut2-001.sgm','r');
@@ -7,6 +8,7 @@ def readText():
     for line in f.readlines():
         print(line);
     f.close();
+
 
 def readStopWords(dictStopWords):
     f = open ('stopwords.txt','r');
@@ -22,10 +24,15 @@ def removeComma(Number):
     new = re.sub('(?<=\d),(?=\d)', '', Number);
     return new;
 
-#def entropiaClases():
-
-
-
+def totalEntropy(dictClass, numDocs):
+    # hacer la suma de los result de cada una de las clases
+    # dictClass={key:[nc, result]}
+    sumEntropy=0;
+    for key in dictClass:
+        p=(dict.get(key)[1])/numDocs;
+        result = p*math.log2(p);
+        dictClass[key][1]=result;
+        sumEntropy+=result;
 def readFile():
     f = open('reut2-001.sgm', 'r')
     data= f.read()
@@ -34,20 +41,85 @@ def readFile():
     for content in contents:
         print (content.text)
 
-    
+    finalEntropy=-1*sumEntropy;
+    return finalEntropy;
 
+
+
+def termEntropy(dictClass, dictWords, numDocs):
+    # por cada uno de los elementos del dictWords
+    # hacer las siguientes operaciones
+    # 1- ni*log(ni,2)
+    # 2- (N-ni)*log(N-ni, 2)
+    # 3- número de veces que aparece * log(número de veces que aparece, 2)
+    # 4- (nc de la clase a la que pertenece - número de veces que aparece) * log(nc de la clase a la que pertenece - número de veces que aparece, 2)
+    # ahora para dar el resultado final se hace:
+    # (1 + 2 - 3 - 4) / N
+    # meter ese valor en el diccionario en el termino que corresponde
+    # 
+    # dictWords={key:[ni, nic, class, nc, result, IGTerm]}
+    for key in dictWords:
+        op1=(dictWords.get(key)[0])*math.log2(dictWords.get(key)[0]);
+        op2=(numDocs-(dictWords.get(key)[0]))*math.log2(numDocs-(dictWords.get(key)[0]));
+        op3=(dictWords.get(key)[1])*math.log2(dictWords.get(key)[1]);
+        op4=((dictClass.get(dictWords.get(key)[2])[0])-(dictWords.get(key)[1]))*math.log2((dictClass.get(dictWords.get(key)[2])[0])-(dictWords.get(key)[1]));
+        result=(op1+op2-op3-op4)/numDocs;
+        dictWords[key][4]=result;
+
+
+
+def IG(dictWords, generalEntropy):
+    # para cada uno de lo terminos hacer:
+    # totalEntropy - termEntropy
+    # hacer un escalafón con los resultados mostrando el resultado de IG y el termino
+    for key in dictWords:
+        IGTerm = generalEntropy-(dictWords.get(key)[4]);
+        dictWords[key][5]=IGTerm;
+
+
+def createTempFile(document, cont):
+    f = open ('C:/Users/admin/Desktop/temp.txt','w');
+    f.write(document);
+    f.close();
+
+def readText():
+    f = open ('C:/Users/admin/Desktop/reut2-001.sgm','r');
+    document="";
+    cont=1;
+    regex = r".*</REUTERS>";
+    for line in f.readlines():
+        matches = re.match(regex, line, re.MULTILINE);
+        if matches and cont<=2:
+            createTempFile(document);
+            cont=cont+1
+            document=""
+            print("Aquí termina --------------")
+        else:
+            document+=line;
+    f.close();
 
 
 def main():
+    numDocs=0;
+    generalEntropy=0;
     dictStopWords = {};
+    # el dictClass necesita el nombre como key, el número de veces que aparece esa clase, y result(el resultado de p*log(p,2)) como espacios en valor
+    # luego hacer la división del número de veces que aparece entre el número total de documentos
+    # número de veces que aparece entre el número total de documentos = nc/N = p
+    # log en base 2 de número de veces que aparece entre el número total de documentos = log(p,2)
+    # y luego hacer la multiplicación de p*log(p,2) = result
+    dictClass = {'sugar':[1,23]};
+    # el dictWords necesita el nombre como key, el ni, el número de veces que aparece por clase,
+    # clase a la que pertece, el p de la clase a la que pertenece, y el resultado de la empropía por termino como espacios del valor.
+    # 
+    dictWords = {};
     # readStopWords(dictStopWords);
-    number = "9,1651,6168,3216,3158,3216,316,4685.21651654"
-    number1="7,030,000 asfd sfada,sfd a asdfas qwer 4654 13213 5613.16354 qwer w654 4re,wq6r ewqre,wq asdf 654 321 1521.146 adfas 4654,79865.465 64,64968,65321.163"
-    new=removeComma(number1);
-    print(new);
+    # removeComma(number1);
+    # readText();
 
-
-
+    print(dictClass.get('sugar')[1])
+    dictClass['sugar'][1]=654
+    print(dictClass.get('sugar')[1])
 
 
 
@@ -61,6 +133,7 @@ def main():
     # minNi = input();
 	# print("Ingrese un prefijo para usar en los nombres de los archivos generados");
     # pref = input();
+
 
 main();
 
