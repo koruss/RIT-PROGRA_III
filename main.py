@@ -1,4 +1,4 @@
-# from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup
 import re
 import math
 from os import remove
@@ -27,27 +27,16 @@ def removeComma(Number):
 
 def totalEntropy(dictClass, numDocs):
     # hacer la suma de los result de cada una de las clases
-    # dictClass={key:[nc, result]}
+    # dictClass={key:[nc, result, [NEWID]]}
     sumEntropy=0;
     for key in dictClass:
-        p=(dict.get(key)[1])/numDocs;
+        p=(dictClass.get(key)[0])/numDocs;
         result = p*math.log2(p);
         dictClass[key][1]=result;
         sumEntropy+=result;
 
     finalEntropy=-1*sumEntropy;
     return finalEntropy;
-
-
-def readFile():
-    f = open('temp.txt', 'r')
-    data= f.read()
-    soup = BeautifulSoup(data)
-    contents = soup.findAll('TITLE')
-    for content in contents:
-        print (content.text)
-
-
 
 
 
@@ -81,14 +70,32 @@ def IG(dictWords, generalEntropy):
         IGTerm = generalEntropy-(dictWords.get(key)[4]);
         dictWords[key][5]=IGTerm;
 
-def getData():
+
+def readFile():
+    f = open('temp.txt', 'r')
+    data= f.read()
+    soup = BeautifulSoup(data, "xml")
+    contents = soup.findAll('TOPICS')
+    for content in contents:
+        return content.text
+
+
+def getData(dictClass, dictWords):
+    # dictClass={key:[nc, result, [NEWID]]}
     f = open('temp.txt','r');
     regex = r".*TOPICS=\"YES\".*NEWID=\"(\d+).*"
+    topic=readFile();
+    if dictClass.get(topic):
+        dictClass[topic][0]+=1;
+    else:
+        dictClass[topic]=[1,0,[]];
+    
     line = f.readline()
     matches = re.match(regex, line, re.MULTILINE);
     if(matches):
-        g = open('docs.txt','a');
-        g.write(matches.group(1) + '\n');
+        dictClass[topic][2].append(matches.group(1));
+        # g = open('docs.txt','a');
+        # g.write(matches.group(1) + '\n');
         
 
         
@@ -98,7 +105,7 @@ def createTempFile(document, dictClass, dictWords):
     f = open ('temp.txt','w');
     f.write(document);
     f.close();
-    getData();
+    getData(dictClass, dictWords);
     
 
 
@@ -110,15 +117,16 @@ def readText(dictClass, dictWords):
     h = open('docs.txt','w');
     i = open('dicc.txt','w');
     document="";
+    max=10000000;
     cont=1;
     regex = r".*</REUTERS>";
     for line in f.readlines():
         matches = re.match(regex, line, re.MULTILINE);
-        if matches and cont<=3:
+        if matches and cont<=max:
             createTempFile(document, dictClass, dictWords);
             cont+=1;
             document=""
-            print("Aquí termina --------------")
+            # print("Aquí termina --------------")
         else:
             document+=line;
     f.close();
@@ -126,9 +134,9 @@ def readText(dictClass, dictWords):
 
 
 def main():
-    generalEntropy=0;
     dictStopWords = {};
-    # el dictClass necesita el nombre como key, el número de veces que aparece esa clase, y result(el resultado de p*log(p,2)) como espacios en valor
+    # el dictClass necesita el nombre como key, el número de veces que aparece esa clase, y result(el resultado de p*log(p,2)) como espacios en valor,
+    # y una lista con los NEWID si corresponde
     # luego hacer la división del número de veces que aparece entre el número total de documentos
     # número de veces que aparece entre el número total de documentos = nc/N = p
     # log en base 2 de número de veces que aparece entre el número total de documentos = log(p,2)
@@ -137,14 +145,24 @@ def main():
     # el dictWords necesita el nombre como key, el ni, el número de veces que aparece por clase,
     # clase a la que pertece, el p de la clase a la que pertenece, y el resultado de la empropía por termino como espacios del valor.
     # 
-    dictWords = {};
+    dictWords = {'a':[2,2,"dasd"]};
     # readStopWords(dictStopWords);
     # removeComma(number1);
     numDocs=readText(dictClass, dictWords);
+    # print(dictClass);
+    for i in dictClass:
+        print(i+':'+str(dictClass[i]))
+    # print(numDocs);
 
     # readFile();
 
+    # dictWords['a'][0]+=1;
+    # dictWords['d']=[1,0,""];
+    # print(dictWords)
 
+    generalEntropy=totalEntropy(dictClass, numDocs);
+    print(generalEntropy);
+    
 
     # print("Ingrese la ruta del archivo que contiene los artículos noticiosos");
     # path = input();
