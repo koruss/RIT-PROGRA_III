@@ -1,3 +1,4 @@
+# from bs4 import BeautifulSoup
 import re
 import math
 from os import remove
@@ -33,16 +34,20 @@ def totalEntropy(dictClass, numDocs):
         result = p*math.log2(p);
         dictClass[key][1]=result;
         sumEntropy+=result;
+
+    finalEntropy=-1*sumEntropy;
+    return finalEntropy;
+
+
 def readFile():
-    f = open('reut2-001.sgm', 'r')
+    f = open('temp.txt', 'r')
     data= f.read()
     soup = BeautifulSoup(data)
     contents = soup.findAll('TITLE')
     for content in contents:
         print (content.text)
 
-    finalEntropy=-1*sumEntropy;
-    return finalEntropy;
+
 
 
 
@@ -76,31 +81,51 @@ def IG(dictWords, generalEntropy):
         IGTerm = generalEntropy-(dictWords.get(key)[4]);
         dictWords[key][5]=IGTerm;
 
+def getData():
+    f = open('temp.txt','r');
+    regex = r".*TOPICS=\"YES\".*NEWID=\"(\d+).*"
+    line = f.readline()
+    matches = re.match(regex, line, re.MULTILINE);
+    if(matches):
+        g = open('docs.txt','a');
+        g.write(matches.group(1) + '\n');
+        
 
-def createTempFile(document, cont):
-    f = open ('C:/Users/admin/Desktop/temp.txt','w');
+        
+
+
+def createTempFile(document, dictClass, dictWords):
+    f = open ('temp.txt','w');
     f.write(document);
     f.close();
+    getData();
+    
 
-def readText():
-    f = open ('C:/Users/admin/Desktop/reut2-001.sgm','r');
+
+
+
+def readText(dictClass, dictWords):
+    f = open ('reut2-001.sgm','r');
+    g = open('clases.txt','w');
+    h = open('docs.txt','w');
+    i = open('dicc.txt','w');
     document="";
     cont=1;
     regex = r".*</REUTERS>";
     for line in f.readlines():
         matches = re.match(regex, line, re.MULTILINE);
-        if matches and cont<=2:
-            createTempFile(document);
-            cont=cont+1
+        if matches and cont<=3:
+            createTempFile(document, dictClass, dictWords);
+            cont+=1;
             document=""
             print("Aquí termina --------------")
         else:
             document+=line;
     f.close();
+    return cont-1; 
 
 
 def main():
-    numDocs=0;
     generalEntropy=0;
     dictStopWords = {};
     # el dictClass necesita el nombre como key, el número de veces que aparece esa clase, y result(el resultado de p*log(p,2)) como espacios en valor
@@ -108,18 +133,16 @@ def main():
     # número de veces que aparece entre el número total de documentos = nc/N = p
     # log en base 2 de número de veces que aparece entre el número total de documentos = log(p,2)
     # y luego hacer la multiplicación de p*log(p,2) = result
-    dictClass = {'sugar':[1,23]};
+    dictClass = {};
     # el dictWords necesita el nombre como key, el ni, el número de veces que aparece por clase,
     # clase a la que pertece, el p de la clase a la que pertenece, y el resultado de la empropía por termino como espacios del valor.
     # 
     dictWords = {};
     # readStopWords(dictStopWords);
     # removeComma(number1);
-    # readText();
+    numDocs=readText(dictClass, dictWords);
 
-    print(dictClass.get('sugar')[1])
-    dictClass['sugar'][1]=654
-    print(dictClass.get('sugar')[1])
+    # readFile();
 
 
 
