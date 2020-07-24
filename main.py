@@ -3,27 +3,25 @@ import re
 import math
 from os import remove
 
-def readText():
-    f = open ('reut2-001.sgm','r');
-    mensaje="";
-    for line in f.readlines():
-        print(line);
-    f.close();
-
 
 def readStopWords(dictStopWords):
     f = open ('stopwords.txt','r');
     message = f.read();
-
     patternStopWords = re.compile(r"([a-z']+)");
     listStopWords = patternStopWords.findall(message);
     for i in listStopWords:
         dictStopWords[i]=i;
     return dictStopWords;
 
-def removeComma(Number):
-    new = re.sub('(?<=\d),(?=\d)', '', Number);
-    return new;
+def removeStopWords(words, dictStopWords):
+    regex = r'(\d+?(?<=\d)\.(?=\d)\d+|\w+)';
+    cleanWords=[];
+    for i in words:
+        matches = re.match(regex, i);
+        if matches and i not in dictStopWords:
+            cleanWords.append(matches.group(1));
+
+    return(cleanWords);  
 
 def totalEntropy(dictClass, numDocs):
     # hacer la suma de los result de cada una de las clases
@@ -71,11 +69,11 @@ def IG(dictWords, generalEntropy):
         dictWords[key][5]=IGTerm;
 
 
-def readFile():
+def readFile(toGet):
     f = open('temp.txt', 'r')
     data= f.read()
     soup = BeautifulSoup(data, "xml")
-    contents = soup.findAll('TOPICS')
+    contents = soup.findAll(toGet)
     for content in contents:
         return content.text
 
@@ -84,7 +82,7 @@ def getData(dictClass, dictWords):
     # dictClass={key:[nc, result, [NEWID]]}
     f = open('temp.txt','r');
     regex = r".*TOPICS=\"YES\".*NEWID=\"(\d+).*"
-    topic=readFile();
+    topic=readFile('TOPICS');
     if dictClass.get(topic):
         dictClass[topic][0]+=1;
     else:
@@ -94,24 +92,32 @@ def getData(dictClass, dictWords):
     matches = re.match(regex, line, re.MULTILINE);
     if(matches):
         dictClass[topic][2].append(matches.group(1));
-        # g = open('docs.txt','a');
-        # g.write(matches.group(1) + '\n');
         
 
-        
+def getWords(dictClass, dictWords, dictStopWords, cont):
+    text=readFile('BODY');
+    wordsComma = re.sub('(?<=\d),(?=\d)', '', text);
+    wordsLower = wordsComma.lower();
+    wordsSplit = wordsLower.split();
+    words = removeStopWords(wordsSplit, dictStopWords);
+    for i in words:
+        if dictWords.get(i):
+            dictWords[i]
 
 
-def createTempFile(document, dictClass, dictWords):
+
+def createTempFile(document, dictClass, dictWords, dictStopWords, cont):
     f = open ('temp.txt','w');
     f.write(document);
     f.close();
-    getData(dictClass, dictWords);
+    # getData(dictClass, dictWords);
+    getWords(dictClass, dictWords, dictStopWords, cont);
     
 
 
 
 
-def readText(dictClass, dictWords):
+def readText(dictClass, dictWords, dictStopWords):
     f = open ('reut2-001.sgm','r');
     g = open('clases.txt','w');
     h = open('docs.txt','w');
@@ -122,8 +128,8 @@ def readText(dictClass, dictWords):
     regex = r".*</REUTERS>";
     for line in f.readlines():
         matches = re.match(regex, line, re.MULTILINE);
-        if matches and cont<=max:
-            createTempFile(document, dictClass, dictWords);
+        if matches and cont<=1:
+            createTempFile(document, dictClass, dictWords, dictStopWords, cont);
             cont+=1;
             document=""
             # print("Aquí termina --------------")
@@ -135,6 +141,7 @@ def readText(dictClass, dictWords):
 
 def main():
     dictStopWords = {};
+    # dictClass={key:[nc, result, [NEWID]]}
     # el dictClass necesita el nombre como key, el número de veces que aparece esa clase, y result(el resultado de p*log(p,2)) como espacios en valor,
     # y una lista con los NEWID si corresponde
     # luego hacer la división del número de veces que aparece entre el número total de documentos
@@ -142,26 +149,24 @@ def main():
     # log en base 2 de número de veces que aparece entre el número total de documentos = log(p,2)
     # y luego hacer la multiplicación de p*log(p,2) = result
     dictClass = {};
+    # dictWords={key:[ni, nci, class, pClass, result}
     # el dictWords necesita el nombre como key, el ni, el número de veces que aparece por clase,
     # clase a la que pertece, el p de la clase a la que pertenece, y el resultado de la empropía por termino como espacios del valor.
     # 
-    dictWords = {'a':[2,2,"dasd"]};
+    dictWords = {};
     # readStopWords(dictStopWords);
     # removeComma(number1);
-    numDocs=readText(dictClass, dictWords);
-    # print(dictClass);
-    for i in dictClass:
-        print(i+':'+str(dictClass[i]))
-    # print(numDocs);
-
-    # readFile();
-
-    # dictWords['a'][0]+=1;
-    # dictWords['d']=[1,0,""];
-    # print(dictWords)
-
+    readStopWords(dictStopWords);
+    numDocs=readText(dictClass, dictWords, dictStopWords);
+    # for i in dictClass:
+    #     print(i+':'+str(dictClass[i]))
+ 
     generalEntropy=totalEntropy(dictClass, numDocs);
-    print(generalEntropy);
+    # print(generalEntropy);
+    
+    # print(dictStopWords);
+
+
     
 
     # print("Ingrese la ruta del archivo que contiene los artículos noticiosos");
