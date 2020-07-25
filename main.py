@@ -49,14 +49,35 @@ def termEntropy(dictClass, dictWords, numDocs):
     # (1 + 2 - 3 - 4) / N
     # meter ese valor en el diccionario en el termino que corresponde
     # 
-    # dictWords={key:[ni, nic, class, nc, result, IGTerm]}
+    #
+    # dictWords[key]=[ni, cont, {classWord:1}, result, IG];
+    # for i in dictWords['a'][1]:
+    #     print(dictWords['a'][1][i]);
+    print(dictClass.get('coffee'))
+    print(dictWords.get('said'))
     for key in dictWords:
-        op1=(dictWords.get(key)[0])*math.log2(dictWords.get(key)[0]);
-        op2=(numDocs-(dictWords.get(key)[0]))*math.log2(numDocs-(dictWords.get(key)[0]));
-        op3=(dictWords.get(key)[1])*math.log2(dictWords.get(key)[1]);
-        op4=((dictClass.get(dictWords.get(key)[2])[0])-(dictWords.get(key)[1]))*math.log2((dictClass.get(dictWords.get(key)[2])[0])-(dictWords.get(key)[1]));
-        result=(op1+op2-op3-op4)/numDocs;
-        dictWords[key][4]=result;
+        ni=dictWords[key][0]
+        Nmni = (numDocs - ni)
+
+        op1=(ni)*(math.log2(ni));
+        op2=(Nmni)*(math.log2(Nmni));
+        op3=0;
+        op4=0;
+        for i in dictWords.get(key)[2]:
+            nik=(dictWords.get(key)[2][i])
+            op3+=(nik*(math.log2(nik)))
+
+        for i in dictWords.get(key)[2]:
+            nik=(dictWords.get(key)[2][i])
+            nc=(dictClass.get(i)[0])
+            ncmnik=(nc-nik)
+            if ncmnik>0:
+                print(key+': nc='+str(nc)+', nik='+str(nik)+', ncmnik='+str(ncmnik))
+                op4+=((ncmnik)*(math.log2(ncmnik)))
+
+        num=(op1+op2-op3-op4)
+        result=num/numDocs;
+        dictWords[key][3]=result;
 
 
 
@@ -65,11 +86,24 @@ def IG(dictWords, generalEntropy):
     # totalEntropy - termEntropy
     # hacer un escalafón con los resultados mostrando el resultado de IG y el termino
     for key in dictWords:
-        IGTerm = generalEntropy-(dictWords.get(key)[4]);
-        dictWords[key][5]=IGTerm;
+        IGTerm = generalEntropy-(dictWords.get(key)[3]);
+        dictWords[key][4]=IGTerm;
 
 
-def readFile(toGet):
+def readTopic(toGet):
+    f = open('temp.txt', 'r')
+    data= f.read()
+    soup = BeautifulSoup(data, "xml")
+    contents = soup.findAll(toGet)
+    for content in contents:
+        if content.text!='':
+            for i in content:
+                return i.text;
+                break;
+        else:
+            return content.text;
+        
+def readBody(toGet):
     f = open('temp.txt', 'r')
     data= f.read()
     soup = BeautifulSoup(data, "xml")
@@ -82,7 +116,7 @@ def getData(dictClass, dictWords):
     # dictClass={key:[nc, result, [NEWID]]}
     f = open('temp.txt','r');
     regex = r".*TOPICS=\"YES\".*NEWID=\"(\d+).*"
-    topic=readFile('TOPICS');
+    topic=readTopic('TOPICS');
     if dictClass.get(topic):
         dictClass[topic][0]+=1;
     else:
@@ -95,14 +129,29 @@ def getData(dictClass, dictWords):
         
 
 def getWords(dictClass, dictWords, dictStopWords, cont):
-    text=readFile('BODY');
-    wordsComma = re.sub('(?<=\d),(?=\d)', '', text);
-    wordsLower = wordsComma.lower();
-    wordsSplit = wordsLower.split();
-    words = removeStopWords(wordsSplit, dictStopWords);
-    for i in words:
-        if dictWords.get(i):
-            dictWords[i]
+
+    # dictWords = {key: ni, cont, [class, class]}
+    text='';
+    text=readBody('BODY');
+    classWord=readTopic('TOPICS');
+    if text != None:
+        wordsComma = re.sub('(?<=\d),(?=\d)', '', text);
+        wordsLower = wordsComma.lower();
+        wordsSplit = wordsLower.split();
+        words = removeStopWords(wordsSplit, dictStopWords);
+        for i in words:
+            if (dictWords.get(i) and cont != dictWords[i][1]):
+                dictWords[i][0]+=1;
+                dictWords[i][1] = cont; 
+                if (dictWords[i][2].get(classWord)):
+                    dictWords[i][2][classWord] += 1;
+                else:
+                    dictWords[i][2][classWord] = 1;
+            elif (dictWords.get(i)==None):
+                dictWords[i]=[1, cont, {classWord:1}, 0, 0];
+                
+
+    # print(dictWords);
 
 
 
@@ -110,7 +159,7 @@ def createTempFile(document, dictClass, dictWords, dictStopWords, cont):
     f = open ('temp.txt','w');
     f.write(document);
     f.close();
-    # getData(dictClass, dictWords);
+    getData(dictClass, dictWords);
     getWords(dictClass, dictWords, dictStopWords, cont);
     
 
@@ -128,7 +177,7 @@ def readText(dictClass, dictWords, dictStopWords):
     regex = r".*</REUTERS>";
     for line in f.readlines():
         matches = re.match(regex, line, re.MULTILINE);
-        if matches and cont<=1:
+        if matches and cont<=max:
             createTempFile(document, dictClass, dictWords, dictStopWords, cont);
             cont+=1;
             document=""
@@ -154,18 +203,13 @@ def main():
     # clase a la que pertece, el p de la clase a la que pertenece, y el resultado de la empropía por termino como espacios del valor.
     # 
     dictWords = {};
-    # readStopWords(dictStopWords);
-    # removeComma(number1);
     readStopWords(dictStopWords);
     numDocs=readText(dictClass, dictWords, dictStopWords);
-    # for i in dictClass:
-    #     print(i+':'+str(dictClass[i]))
  
     generalEntropy=totalEntropy(dictClass, numDocs);
-    # print(generalEntropy);
-    
-    # print(dictStopWords);
+    termEntropy(dictClass, dictWords, numDocs);
 
+    IG(dictWords, generalEntropy);
 
     
 
