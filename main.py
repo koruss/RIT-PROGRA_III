@@ -2,6 +2,8 @@ from bs4 import BeautifulSoup
 import re
 import math
 from os import remove
+import operator
+from operator import *
 
 def writeClass(dictClass, minNc):
     g = open('clases.txt','w');
@@ -88,7 +90,7 @@ def termEntropy(dictClass, dictWords, numDocs, minNi):
                     op4+=((ncmnik)*(math.log2(ncmnik)))
 
             num=(op1+op2-op3-op4)
-            result=num/numDocs;
+            result=-1*(num/numDocs);
             dictWords[key][3]=result;
 
 
@@ -124,20 +126,38 @@ def readBody(toGet):
         return content.text
 
 
+# def getClass(dictClass):
+#     # dictClass={key:[nc, result, [NEWID]]}
+#     f = open('temp.txt','r');
+#     regex = r".*TOPICS=\"YES\".*NEWID=\"(\d+).*"
+#     topic=readTopic('TOPICS');
+#     if dictClass.get(topic):
+#         dictClass[topic][0]+=1;
+#     else:
+#         dictClass[topic]=[1,0,[]];
+    
+#     line = f.readline()
+#     matches = re.match(regex, line, re.MULTILINE);
+#     if(matches):
+#         dictClass[topic][2].append(matches.group(1));
+
 def getClass(dictClass):
     # dictClass={key:[nc, result, [NEWID]]}
     f = open('temp.txt','r');
     regex = r".*TOPICS=\"YES\".*NEWID=\"(\d+).*"
     topic=readTopic('TOPICS');
-    if dictClass.get(topic):
-        dictClass[topic][0]+=1;
-    else:
-        dictClass[topic]=[1,0,[]];
-    
     line = f.readline()
     matches = re.match(regex, line, re.MULTILINE);
-    if(matches):
-        dictClass[topic][2].append(matches.group(1));
+    if(matches) and topic != '':
+        if dictClass.get(topic):
+            dictClass[topic][0]+=1;
+            dictClass[topic][2].append(matches.group(1));
+        else:
+            dictClass[topic]=[1,0,[matches.group(1)]];
+    
+    
+    
+        
         
 
 def getWords(dictClass, dictWords, dictStopWords, cont, minNc):
@@ -146,7 +166,7 @@ def getWords(dictClass, dictWords, dictStopWords, cont, minNc):
     text='';
     text=readBody('BODY');
     classWord=readTopic('TOPICS');
-    if dictClass.get(classWord)[0] > minNc and dictClass.get(classWord)[2] != []:
+    if classWord in dictClass and dictClass.get(classWord)[0] > minNc and dictClass.get(classWord)[2] != []:
         if text != None:
             wordsComma = re.sub('(?<=\d),(?=\d)', '', text);
             wordsLower = wordsComma.lower();
@@ -209,8 +229,8 @@ def main():
 	# print("Ingrese un prefijo para usar en los nombres de los archivos generados");
     # pref = input();
 
-    minNc=6;
-    minNi=5;
+    minNc=0;
+    minNi=0;
     dictStopWords = {};
     # dictClass={key:[nc, result, [NEWID]]}
     # el dictClass necesita el nombre como key, el número de veces que aparece esa clase, y result(el resultado de p*log(p,2)) como espacios en valor,
@@ -225,6 +245,7 @@ def main():
     # clase a la que pertece, el p de la clase a la que pertenece, y el resultado de la empropía por termino como espacios del valor.
     # 
     dictWords = {};
+    bestTerms = {};
     readStopWords(dictStopWords);
     first = [0,1]
 
@@ -236,17 +257,24 @@ def main():
             numDocs=readText(dictClass, dictWords, dictStopWords, i, minNc);
     
 
-    # generalEntropy=totalEntropy(dictClass, numDocs);
-    # termEntropy(dictClass, dictWords, numDocs, minNi);
+    generalEntropy=totalEntropy(dictClass, numDocs);
+    termEntropy(dictClass, dictWords, numDocs, minNi);
 
-    # IG(dictWords, generalEntropy);
+    IG(dictWords, generalEntropy);
+    print(generalEntropy)
 
-    # print(dictClass)
-    # print(dictWords)
+    sor=sorted(dictWords.items())
+    for i in sor:
+        print(i[1][4])
+
+    s=sorted(sor, key= itemgetter([1][4]))
+    for i in s:
+        print(i)
+
 
 
     writeClass(dictClass, minNc);
-    writeDicc(words, minNi);
+    writeDicc(dictWords, minNi);
     
 
 
