@@ -18,7 +18,8 @@ def writeClass(dictClass, minNc):
 def writeDicc(dictWords, minNi):    
     f = open('dicc.txt','w');
     for i in dictWords:
-        f.write(i + ':' + str(dictWords[i][0]) + '\n');
+        if(dictWords[i][0] > minNi):
+            f.write(i + ':' + str(dictWords[i][0]) + '\n');
     f.close();
 
 
@@ -145,11 +146,11 @@ def getClass(dictClass):
     # dictClass={key:[nc, result, [NEWID]]}
     f = open('temp.txt','r');
     regex = r".*TOPICS=\"YES\".*NEWID=\"(\d+).*"
-    topic=readTopic('TOPICS');
     line = f.readline()
     matches = re.match(regex, line, re.MULTILINE);
-    if(matches) and topic != '':
-        if dictClass.get(topic):
+    if(matches):
+        topic=readTopic('TOPICS');
+        if topic != '' and dictClass.get(topic):
             dictClass[topic][0]+=1;
             dictClass[topic][2].append(matches.group(1));
         else:
@@ -216,6 +217,31 @@ def readText(dictClass, dictWords, dictStopWords, first, minNc):
     f.close();
     return cont-1; 
 
+def get_GI(dict):
+    # dictWords = {key: [ni, cont, [class, class], result, IG]}
+    return dict.get('key')
+
+def mejoresTerminos(num,arreglo):
+    escalafon=[]
+    cont=0
+    while(cont<num):
+        escalafon.append(arreglo[cont])
+        cont=cont+1
+    return escalafon
+
+def cleanWords(dictWords, minNi):
+    temp={}
+    for i in dictWords:
+        if dictWords[i][0]>minNi:
+            temp[i]=dictWords[i];
+
+    return temp;
+
+def writeBest(best):
+    f = open ('Mejores_Terminos.txt','w');
+    for i in best:
+        f.write(str(i.get('value'))+'\n');
+    f.close();
 
 def main():
     # print("Ingrese la ruta del archivo que contiene los artículos");
@@ -228,9 +254,9 @@ def main():
     # numMejores = input();
 	# print("Ingrese un prefijo para usar en los nombres de los archivos generados");
     # pref = input();
-
-    minNc=0;
-    minNi=0;
+    
+    minNc=10;
+    minNi=10;
     dictStopWords = {};
     # dictClass={key:[nc, result, [NEWID]]}
     # el dictClass necesita el nombre como key, el número de veces que aparece esa clase, y result(el resultado de p*log(p,2)) como espacios en valor,
@@ -245,7 +271,7 @@ def main():
     # clase a la que pertece, el p de la clase a la que pertenece, y el resultado de la empropía por termino como espacios del valor.
     # 
     dictWords = {};
-    bestTerms = {};
+    #bestTerms = {};
     readStopWords(dictStopWords);
     first = [0,1]
 
@@ -257,21 +283,34 @@ def main():
             numDocs=readText(dictClass, dictWords, dictStopWords, i, minNc);
     
 
+    dictWords=cleanWords(dictWords, minNi);
+
     generalEntropy=totalEntropy(dictClass, numDocs);
     termEntropy(dictClass, dictWords, numDocs, minNi);
 
     IG(dictWords, generalEntropy);
-    print(generalEntropy)
-
+    #print(generalEntropy)
+    temp=[]
     sor=sorted(dictWords.items())
     for i in sor:
-        print(i[1][4])
-
-    s=sorted(sor, key= itemgetter([1][4]))
-    for i in s:
-        print(i)
+        temp.append({'key':i[1][4], 'value':i[0]})
 
 
+    temp.sort(key=get_GI, reverse=True)
+    for element in temp:
+        print(element)
+        print('\n')
+
+    asd=mejoresTerminos(5,temp)
+    writeBest(asd);
+    print(asd ,end="\n")
+
+    # s=sorted(sor, key= itemgetter([1][4]))
+    # for i in s:
+    #     print(i)
+
+
+    #print (get_GI(dictWords,1))
 
     writeClass(dictClass, minNc);
     writeDicc(dictWords, minNi);
