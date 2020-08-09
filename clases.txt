@@ -1,7 +1,3 @@
-earn:226
-money-fx:18
-acq:88
-trade:23
-coffee:14
-grain:38
-crude:21
+A:5
+B:4
+C:3
