@@ -1,0 +1,10 @@
+earn:226
+money-fx:18
+acq:88
+trade:23
+coffee:14
+gnp:7
+grain:38
+interest:8
+sugar:10
+crude:21
