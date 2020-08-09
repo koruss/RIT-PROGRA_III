@@ -259,7 +259,7 @@ def get_GI(dict):
 
 def mejoresTerminos(num,arreglo):
     escalafon=[]
-    cont=0
+    cont=1
     for element in arreglo:
         if(cont<num):
             escalafon.append(element)
@@ -335,9 +335,9 @@ def main():
 
 
     temp.sort(key=get_GI, reverse=True)
-    # for element in temp:
-    #     print(element)
-    #     print('\n')
+    for element in temp:
+        print(element)
+        print('\n')
 
     asd=mejoresTerminos(4,temp)
     print(asd ,end="\n")
