@@ -4,22 +4,28 @@ import math
 from os import remove
 import operator
 from operator import *
+from tkinter.filedialog import *
 
-def writeClass(dictClass, minNc):
-    g = open('clases.txt','w');
-    h = open('docs.txt','w');
+def writeClass(dictClass, minNc,pref):
+    g = open(pref+'clases.txt','w');
+    h = open(pref+'docs.txt','w');
+    word=""
+    
     for i in dictClass:
         if dictClass.get(i)[0] >= minNc and dictClass.get(i)[2] != []:
-            h.write(i + ':' + str(dictClass.get(i)[2]) + '\n')
+            for l in dictClass.get(i)[2]:
+                word=word+str(l)+" "
+            h.write(i + ' ' + word + '\n')
+            word=""
         if dictClass.get(i)[0] >= minNc:
-            g.write(i + ':' + str(dictClass.get(i)[0]) + '\n');
+            g.write(i + ' ' + str(dictClass.get(i)[0]) + '\n');
     g.close();
 
-def writeDicc(dictWords, minNi):    
-    f = open('dicc.txt','w');
+def writeDicc(dictWords, minNi,pref):    
+    f = open(pref+'dicc.txt','w');
     for i in dictWords:
         if(dictWords[i][0] > minNi):
-            f.write(i + ':' + str(dictWords[i][0]) + '\n');
+            f.write(i + ' ' + str(dictWords[i][0]) + '\n');
     f.close();
 
 
@@ -76,7 +82,7 @@ def termEntropy(dictClass, dictWords, numDocs, minNi):
             Nmni = (numDocs - ni)
 
             op1=(ni)*(math.log2(ni));
-            if Nmni==0:
+            if Nmni<=0:
                 op2=0
             else:
                 op2=(Nmni)*(math.log2(Nmni));
@@ -87,14 +93,6 @@ def termEntropy(dictClass, dictWords, numDocs, minNi):
                 nik=(dictWords.get(key)[2][i])
                 op3+=(-(nik*(math.log2(nik))))
 
-            # for i in dictWords.get(key)[2]:
-            #     nik=(dictWords.get(key)[2][i])
-            #     nc=(dictClass.get(i)[0])
-            #     ncmnik=(nc-nik)
-                
-            #     print("nc "+str(nc)+"ncmnik "+str(ncmnik))
-            #     if ncmnik>0:
-            #         op4+=(-((ncmnik)*(math.log2(ncmnik))))
             ncmnik=0;
             num=0;
             arreglo= dictClass.keys()
@@ -103,19 +101,12 @@ def termEntropy(dictClass, dictWords, numDocs, minNi):
                 if(num!= None):
                     ncmnik=dictClass.get(clase)[0] - num
                 else:
-                    ncmnik=ncmnik=dictClass.get(clase)[0] 
-                print("nc:"+str(num)+" ncmnik:"+str(ncmnik))
-                if ncmnik==0:
+                    num=0;
+                    ncmnik=ncmnik=dictClass.get(clase)[0]            
+                if ncmnik<=0:
                     op4+=0;
                 else:
                     op4+=(-((ncmnik)*(math.log2(ncmnik))));
-
-
-           
-
-            print(key)
-            print(str(op1)+'...........'+str(op2)+'...........'+str(op3)+'...........'+str(op4)+'...........')
-            # print(numDocs)
 
             num=(op1+op2+op3+op4)
             
@@ -145,10 +136,6 @@ def readTopic(toGet):
                 #print(i.text)
                 return(i.text)
                 break
-        # print("-----------------------------------------------------------------")
-                # return i.text;
-                # break;
-        
         
 def readBody(toGet):
     f = open('temp.txt', 'r')
@@ -159,22 +146,9 @@ def readBody(toGet):
         return content.text
 
 
-# def getClass(dictClass):
-#     # dictClass={key:[nc, result, [NEWID]]}
-#     f = open('temp.txt','r');
-#     regex = r".*TOPICS=\"YES\".*NEWID=\"(\d+).*"
-#     topic=readTopic('TOPICS');
-#     if dictClass.get(topic):
-#         dictClass[topic][0]+=1;
-#     else:
-#         dictClass[topic]=[1,0,[]];
-    
-#     line = f.readline()
-#     matches = re.match(regex, line, re.MULTILINE);
-#     if(matches):
-#         dictClass[topic][2].append(matches.group(1));
 
-def getClass(dictClass):
+def getClass(dictClass, numDocs):
+    # numDocs={"num":0}
     # dictClass={key:[nc, result, [NEWID]]}
     f = open('temp.txt','r');
     regex = r".*TOPICS=\"YES\".*NEWID=\"(\d+).*"
@@ -184,6 +158,8 @@ def getClass(dictClass):
     for line in lines:
         matches = re.match(regex, line, re.MULTILINE);
         if(matches and topic != None):
+            # valor+=1;
+            numDocs["num"]=numDocs["num"]+1
             if dictClass.get(topic):
                 dictClass[topic][0]+=1;
                 dictClass[topic][2].append(matches.group(1));
@@ -220,22 +196,22 @@ def getWords(dictClass, dictWords, dictStopWords, cont, minNc):
                 
 
 
-def createTempFile(document, dictClass, dictWords, dictStopWords, cont, first, minNc):
+def createTempFile(document, dictClass, dictWords, dictStopWords, cont, first, minNc, numDocs):
     f = open ('temp.txt','w');
     f.write(document);
     f.close();
     if first == 0:
-        getClass(dictClass);
+        getClass(dictClass, numDocs)
     else:
         getWords(dictClass, dictWords, dictStopWords, cont, minNc);
+    
     
 
 
 
 
-def readText(dictClass, dictWords, dictStopWords, first, minNc):
-    # f = open ('reut2-001.sgm','r');
-    f = open('TP3-Prueba.sgm', 'r')
+def readText(dictClass, dictWords, dictStopWords, first, minNc,path, numDocs):
+    f = open(path, 'r')
     document="";
     max=10000000;
     cont=1;
@@ -244,10 +220,9 @@ def readText(dictClass, dictWords, dictStopWords, first, minNc):
         matches = re.match(regex, line, re.MULTILINE);
         if matches and cont<=max:
             document=document+"</REUTERS>"
-            createTempFile(document, dictClass, dictWords, dictStopWords, cont, first, minNc);
+            createTempFile(document, dictClass, dictWords, dictStopWords, cont, first, minNc,numDocs);
             cont+=1;
             document=""
-            # print("Aquí termina --------------")
         else:
             document+=line;
     f.close();
@@ -257,13 +232,19 @@ def get_GI(dict):
     # dictWords = {key: [ni, cont, [class, class], result, IG]}
     return dict.get('key')
 
-def mejoresTerminos(num,arreglo):
+def mejoresTerminos(num,dic):
+    temp=[]  
+    sortedList=sorted(dic.items())
+    for word in sortedList:
+        temp.append({'key':word[1][4], 'value':{'term':word[0], 'entropy':round(word[1][3],4),'GI':round(word[1][4],4)}})
+    temp.sort(key=get_GI, reverse=True)
     escalafon=[]
-    cont=1
-    for element in arreglo:
-        if(cont<num):
-            escalafon.append(element)
-            cont=cont+1
+    cont=0
+    for element in temp:
+         if(cont<num):
+             value= element.get('value')
+             escalafon.append([value.get('term'),value.get('entropy'),value.get('GI')])
+             cont=cont+1
     return escalafon
 
 
@@ -275,27 +256,35 @@ def cleanWords(dictWords, minNi):
 
     return temp;
 
-def writeBest(best):
-    f = open ('Mejores_Terminos.txt','w');
+def writeGI(generalEntropy,dic,pref):
+    f= open(pref+'GI.txt','w')
+    for element in dic:
+        f.write(str(generalEntropy)+" <"+ element+" "+str(round(dic[element][3],4))+" "+str( round(dic[element][4],4))+">\n" )
+    f.close()
+
+def writeBest(best,pref):
+    f = open (pref+'mejores.txt','w');
     for i in best:
-        f.write(str(i.get('value'))+'\n');
+        f.write(str(i[0])+" "+str(i[1])+" "+str(i[2])+'\n');
     f.close();
 
 def main():
-    # print("Ingrese la ruta del archivo que contiene los artículos");
-    # path = input();
-    # print("Ingrese la cantidad mínima de documentos por clase (minNc)");
-    # minNc = input();
-	# print("Ingrese la cantidad mínima de documentos por término (minNi)");
-    # minNi = input();
-    # print("Ingrese la cantidad de mejores términos que serán escogidos (numMejores)");
-    # numMejores = input();
-	# print("Ingrese un prefijo para usar en los nombres de los archivos generados");
-    # pref = input();
-    
-    minNc=1;
-    minNi=1;
+    filepath = askopenfilename(title="Que archivo deseas analizar", filetypes=(("sgm", "*.sgm"),("All files", "*.*")))  # abre la ventanita de buscar archivos
+    print("Ingrese la cantidad mínima de documentos por clase (minNc)")
+    minNc = input();
+    print("Ingrese la cantidad mínima de documentos por término (minNi)")
+    minNi = input();
+    print("Ingrese la cantidad de mejores términos que serán escogidos (numMejores)")
+    numMejores = input();
+    print("Ingrese un prefijo para usar en los nombres de los archivos generados")
+    pref = input();
+    pref=pref+"_"
+    minNc=int(minNc)
+    minNi=int(minNi)
+    numMejores=int(numMejores)
+
     dictStopWords = {};
+    numDocs={"num":0}
     # dictClass={key:[nc, result, [NEWID]]}
     # el dictClass necesita el nombre como key, el número de veces que aparece esa clase, y result(el resultado de p*log(p,2)) como espacios en valor,
     # y una lista con los NEWID si corresponde
@@ -309,54 +298,32 @@ def main():
     # clase a la que pertece, el p de la clase a la que pertenece, y el resultado de la empropía por termino como espacios del valor.
     # 
     dictWords = {};
-    #bestTerms = {};
     readStopWords(dictStopWords);
     first = [0,1]
 
     for i in first:
         if i == 0:
             # Se sacan primero las clases
-            numDocs=readText(dictClass, dictWords, dictStopWords, i, minNc);
+            readText(dictClass, dictWords, dictStopWords, i, minNc,filepath, numDocs);
         else:
-            numDocs=readText(dictClass, dictWords, dictStopWords, i, minNc);
+            readText(dictClass, dictWords, dictStopWords, i, minNc,filepath, numDocs);
     
-
+    
     dictWords=cleanWords(dictWords, minNi);
 
-    generalEntropy=totalEntropy(dictClass, numDocs);
-    termEntropy(dictClass, dictWords, numDocs, minNi);
+    valor=numDocs.get("num")
+    generalEntropy=totalEntropy(dictClass, valor);
+    termEntropy(dictClass, dictWords, valor, minNi);
 
     IG(dictWords, generalEntropy);
-    print(generalEntropy)
-    temp=[]
-    sor=sorted(dictWords.items())
-    for i in sor:
-        temp.append({'key':i[1][4], 'value':i[0]})
 
+    top=mejoresTerminos(numMejores,dictWords)
 
-    temp.sort(key=get_GI, reverse=True)
-    for element in temp:
-        print(element)
-        print('\n')
-
-    asd=mejoresTerminos(4,temp)
-    print(asd ,end="\n")
-    writeBest(asd);
-    
-
-    # s=sorted(sor, key= itemgetter([1][4]))
-    # for i in s:
-    #     print(i)
-
-
-    #print (get_GI(dictWords,1))
-    print(dictClass)
-    print(dictWords)
-
-    # writeClass(dictClass, minNc);
-    writeDicc(dictWords, minNi);
-    
-    print("asfd")
+    writeClass(dictClass, minNc,pref);
+    writeDicc(dictWords, minNi,pref);
+    print("\n\n")
+    writeGI(round(generalEntropy,4),dictWords,pref);
+    writeBest(top,pref);
 
 
 
